@@ -1,6 +1,7 @@
 import { startTransition } from 'react';
 import { DashboardHeader } from './components/dashboard-header';
 import { BalanceTrendChart } from './components/balance-trend-chart';
+import { InsightsSection } from './components/insights-section';
 import { OverviewCard } from './components/overview-card';
 import { SpendingBreakdownChart } from './components/spending-breakdown-chart';
 import { TransactionsSection } from './components/transactions-section';
@@ -53,9 +54,9 @@ function App() {
             <p className="eyebrow">Financial overview</p>
             <h1>Stay ahead of your cash flow with one focused dashboard.</h1>
             <p className="hero-copy">
-              This first release lays the foundation with live summary metrics,
-              monthly balance movement, and a category-level spending pulse
-              generated from a shared application state.
+              This dashboard combines live summary metrics, trend views,
+              role-aware transaction workflows, and insight signals generated
+              from one shared application state.
             </p>
           </div>
 
@@ -103,6 +104,8 @@ function App() {
           />
           <SpendingBreakdownChart data={spendingBreakdown} />
         </section>
+
+        <InsightsSection transactions={transactions} />
 
         <TransactionsSection transactions={transactions} />
       </main>
