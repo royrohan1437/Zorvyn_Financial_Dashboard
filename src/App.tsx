@@ -1,4 +1,4 @@
-import { startTransition, useState } from 'react';
+import { startTransition, useState, type CSSProperties } from 'react';
 import { DashboardHeader } from './components/dashboard-header';
 import { BalanceTrendChart } from './components/balance-trend-chart';
 import { InsightsSection } from './components/insights-section';
@@ -42,6 +42,12 @@ function assignChartColors<T extends { label: string; value: number; share: numb
     ...segment,
     color: palette[index % palette.length],
   }));
+}
+
+function createRevealStyle(delayMs: number): CSSProperties {
+  return {
+    ['--reveal-delay' as string]: `${delayMs}ms`,
+  };
 }
 
 function App() {
@@ -127,7 +133,10 @@ function App() {
       />
 
       <main className="dashboard-layout">
-        <section className="hero-panel">
+        <section
+          className="hero-panel page-reveal"
+          style={createRevealStyle(80)}
+        >
           <div>
             <p className="eyebrow">Financial overview</p>
             <h1>Stay ahead of your cash flow with one focused dashboard.</h1>
@@ -150,41 +159,51 @@ function App() {
         </section>
 
         <section className="summary-grid" aria-label="Financial summary">
-          <OverviewCard
-            label="Total balance"
-            value={summary.totalBalance}
-            delta={`${summary.balanceChange >= 0 ? '+' : ''}${currencyFormatter.format(
-              summary.balanceChange,
-            )}`}
-            emptyLabel="No balance composition yet."
-            segments={balanceComposition}
-            tone="neutral"
-            description="Opening capital, income added, and expenses paid shown in one circular balance view."
-          />
-          <OverviewCard
-            label="Income"
-            value={summary.income}
-            delta={`${summary.incomeShare}% of activity`}
-            emptyLabel="No income categories yet."
-            segments={incomeBreakdown}
-            tone="positive"
-            description="Hover the ring to inspect which income categories contribute the most."
-          />
-          <OverviewCard
-            label="Expenses"
-            value={summary.expenses}
-            delta={`${summary.expenseShare}% of activity`}
-            emptyLabel="No expense categories yet."
-            hintText="Hover to preview. Click a category to filter the transactions below."
-            selectedSegmentLabel={selectedExpenseSegmentLabel}
-            segments={expenseBreakdown}
-            tone="negative"
-            description="Each expense slice shows how much a category is consuming from total outflow."
-            onSegmentSelect={handleExpenseSegmentSelect}
-          />
+          <div className="page-reveal page-reveal--card" style={createRevealStyle(160)}>
+            <OverviewCard
+              label="Total balance"
+              value={summary.totalBalance}
+              delta={`${summary.balanceChange >= 0 ? '+' : ''}${currencyFormatter.format(
+                summary.balanceChange,
+              )}`}
+              emptyLabel="No balance composition yet."
+              segments={balanceComposition}
+              tone="neutral"
+              description="Opening capital, income added, and expenses paid shown in one circular balance view."
+            />
+          </div>
+          <div className="page-reveal page-reveal--card" style={createRevealStyle(240)}>
+            <OverviewCard
+              label="Income"
+              value={summary.income}
+              delta={`${summary.incomeShare}% of activity`}
+              emptyLabel="No income categories yet."
+              segments={incomeBreakdown}
+              tone="positive"
+              description="Hover the ring to inspect which income categories contribute the most."
+            />
+          </div>
+          <div className="page-reveal page-reveal--card" style={createRevealStyle(320)}>
+            <OverviewCard
+              label="Expenses"
+              value={summary.expenses}
+              delta={`${summary.expenseShare}% of activity`}
+              emptyLabel="No expense categories yet."
+              hintText="Hover to preview. Click a category to filter the transactions below."
+              selectedSegmentLabel={selectedExpenseSegmentLabel}
+              segments={expenseBreakdown}
+              tone="negative"
+              description="Each expense slice shows how much a category is consuming from total outflow."
+              onSegmentSelect={handleExpenseSegmentSelect}
+            />
+          </div>
         </section>
 
-        <section className="chart-grid" aria-label="Overview visualizations">
+        <section
+          className="chart-grid page-reveal"
+          aria-label="Overview visualizations"
+          style={createRevealStyle(400)}
+        >
           <BalanceTrendChart
             data={balanceTrend}
             currentBalance={summary.totalBalance}
@@ -192,16 +211,20 @@ function App() {
           <SpendingBreakdownChart data={spendingBreakdown} />
         </section>
 
-        <InsightsSection transactions={transactions} />
+        <div className="page-reveal" style={createRevealStyle(500)}>
+          <InsightsSection transactions={transactions} />
+        </div>
 
-        <TransactionsSection
-          transactions={transactions}
-          selectedCategory={selectedTransactionCategory}
-          selectedType={selectedTransactionType}
-          onCategoryChange={handleTransactionCategoryChange}
-          onResetFilters={resetTransactionFilters}
-          onTypeChange={handleTransactionTypeChange}
-        />
+        <div className="page-reveal" style={createRevealStyle(600)}>
+          <TransactionsSection
+            transactions={transactions}
+            selectedCategory={selectedTransactionCategory}
+            selectedType={selectedTransactionType}
+            onCategoryChange={handleTransactionCategoryChange}
+            onResetFilters={resetTransactionFilters}
+            onTypeChange={handleTransactionTypeChange}
+          />
+        </div>
       </main>
 
       <ScrollToTopButton />

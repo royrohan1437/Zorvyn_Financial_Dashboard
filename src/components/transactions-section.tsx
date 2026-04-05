@@ -379,7 +379,12 @@ export function TransactionsSection({
               </thead>
               <tbody>
                 {visibleTransactions.map((transaction) => (
-                  <tr key={transaction.id}>
+                  <tr
+                    key={transaction.id}
+                    className={`transaction-table__row${
+                      isAdmin ? ' transaction-table__row--admin' : ''
+                    }`}
+                  >
                     <td>
                       <div className="transaction-description">
                         <strong>{transaction.description}</strong>
@@ -405,7 +410,7 @@ export function TransactionsSection({
                       </span>
                     </td>
                     {isAdmin ? (
-                      <td>
+                      <td className="transaction-table__actions">
                         <button
                           type="button"
                           className="table-action"

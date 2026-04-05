@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FocusEvent } from 'react';
 import { useCountUp } from '../hooks/use-count-up';
 import { currencyFormatter, type CircularBreakdownSlice } from '../utils/finance';
 
@@ -57,15 +57,31 @@ export function CircularBreakdownChart({
     onSegmentSelect(segments[index]);
   }
 
+  function handleChartBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextFocusedElement = event.relatedTarget;
+
+    if (
+      nextFocusedElement instanceof Node &&
+      event.currentTarget.contains(nextFocusedElement)
+    ) {
+      return;
+    }
+
+    setActiveIndex(null);
+  }
+
   return (
-    <div className="radial-chart">
+    <div
+      className="radial-chart"
+      onMouseLeave={() => setActiveIndex(null)}
+      onBlur={handleChartBlur}
+    >
       <div className="radial-chart__visual">
         <svg
           className="radial-chart__svg"
           viewBox={`0 0 ${chartSize} ${chartSize}`}
           role="img"
           aria-label={`${centerLabel} breakdown chart`}
-          onMouseLeave={() => setActiveIndex(null)}
         >
           <circle
             className="radial-chart__track"
@@ -110,7 +126,6 @@ export function CircularBreakdownChart({
                 transform={`rotate(-90 ${centerCoordinate} ${centerCoordinate})`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onFocus={() => setActiveIndex(index)}
-                onBlur={() => setActiveIndex(null)}
                 onClick={() => handleSegmentSelect(index)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -143,10 +158,30 @@ export function CircularBreakdownChart({
         </div>
       </div>
 
-      <div className="radial-chart__hint">
-        {segments.length > 0
-          ? hintText ?? 'Hover a slice to preview its category amount in the center.'
-          : emptyLabel}
+      <div className="radial-chart__status">
+        {activeSegment ? (
+          <div className="radial-chart__active" key={activeSegment.label}>
+            <span
+              className="radial-chart__active-swatch"
+              style={{ backgroundColor: activeSegment.color }}
+              aria-hidden="true"
+            />
+            <div className="radial-chart__active-copy">
+              <strong>{activeSegment.label}</strong>
+              <span>{currencyFormatter.format(activeSegment.value)}</span>
+            </div>
+            <span className="radial-chart__active-share">
+              {activeSegment.share}%
+            </span>
+          </div>
+        ) : (
+          <div className="radial-chart__hint">
+            {segments.length > 0
+              ? hintText ??
+                'Hover a slice to preview its category amount in the center.'
+              : emptyLabel}
+          </div>
+        )}
       </div>
 
       {segments.length > 0 ? (
@@ -166,9 +201,7 @@ export function CircularBreakdownChart({
                   isSelected ? ' radial-chart__legend-item--selected' : ''
                 }`}
                 onMouseEnter={() => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
                 onFocus={() => setActiveIndex(index)}
-                onBlur={() => setActiveIndex(null)}
                 onClick={() => handleSegmentSelect(index)}
                 aria-pressed={onSegmentSelect ? isSelected : undefined}
               >
