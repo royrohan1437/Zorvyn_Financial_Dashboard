@@ -1,4 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
+import { ActionToast } from './action-toast';
 import { TransactionEditorPanel } from './transaction-editor-panel';
 import { useDashboard } from '../state/dashboard-context';
 import type { Transaction } from '../types/finance';
@@ -25,6 +26,13 @@ type TransactionsSectionProps = {
   transactions: Transaction[];
 };
 
+type TransactionToast = {
+  id: number;
+  eyebrow: string;
+  title: string;
+  message: string;
+};
+
 export function TransactionsSection({
   transactions,
 }: TransactionsSectionProps) {
@@ -42,6 +50,7 @@ export function TransactionsSection({
     null,
   );
   const [editorDraft, setEditorDraft] = useState<TransactionDraft | null>(null);
+  const [toast, setToast] = useState<TransactionToast | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const isAdmin = selectedRole === 'admin';
   const isEditorOpen = editorDraft !== null;
@@ -67,6 +76,22 @@ export function TransactionsSection({
     }
   }, [isAdmin, isEditorOpen]);
 
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToast((currentToast) =>
+        currentToast?.id === toast.id ? null : currentToast,
+      );
+    }, 3800);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toast]);
+
   function resetFilters() {
     setSearchTerm('');
     setSelectedType('all');
@@ -91,6 +116,34 @@ export function TransactionsSection({
     setEditorDraft(null);
   }
 
+  function dismissToast() {
+    setToast(null);
+  }
+
+  function showTransactionToast(
+    mode: TransactionEditorMode,
+    transaction: Transaction,
+  ) {
+    const amountLabel = currencyFormatter.format(transaction.amount);
+    const toastCopy =
+      mode === 'create'
+        ? {
+            eyebrow: 'Admin activity',
+            title: 'Transaction created',
+            message: `${transaction.description} was added as ${transaction.type} for ${amountLabel}.`,
+          }
+        : {
+            eyebrow: 'Admin activity',
+            title: 'Changes saved',
+            message: `${transaction.description} is now saved under ${transaction.category} for ${amountLabel}.`,
+          };
+
+    setToast({
+      id: Date.now(),
+      ...toastCopy,
+    });
+  }
+
   function handleEditorSubmit(draft: TransactionDraft) {
     const nextTransaction = buildTransactionFromDraft(
       draft,
@@ -112,6 +165,7 @@ export function TransactionsSection({
     });
 
     closeEditor();
+    showTransactionToast(editorMode, nextTransaction);
   }
 
   function handleRestoreDemoData() {
@@ -400,6 +454,15 @@ export function TransactionsSection({
           </div>
         </>
       )}
+
+      {toast ? (
+        <ActionToast
+          eyebrow={toast.eyebrow}
+          title={toast.title}
+          message={toast.message}
+          onDismiss={dismissToast}
+        />
+      ) : null}
     </section>
   );
 }

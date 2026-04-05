@@ -48,6 +48,12 @@
   --table-divider: rgba(148, 163, 184, 0.22);
   --row-hover: rgba(148, 163, 184, 0.08);
   --pill-surface: rgba(15, 23, 42, 0.06);
+  --toast-surface: rgba(255, 255, 255, 0.92);
+  --toast-border: rgba(15, 118, 110, 0.18);
+  --toast-accent-start: #0f766e;
+  --toast-accent-end: #2563eb;
+  --toast-glow: rgba(37, 99, 235, 0.16);
+  --toast-close-hover: rgba(15, 23, 42, 0.08);
   --scrollbar-track: rgba(226, 232, 240, 0.72);
   --scrollbar-thumb: rgba(15, 118, 110, 0.48);
   --scrollbar-thumb-strong: rgba(14, 116, 144, 0.8);
@@ -97,6 +103,12 @@
   --table-divider: rgba(51, 65, 85, 0.88);
   --row-hover: rgba(148, 163, 184, 0.06);
   --pill-surface: rgba(148, 163, 184, 0.14);
+  --toast-surface: rgba(15, 23, 42, 0.94);
+  --toast-border: rgba(94, 234, 212, 0.2);
+  --toast-accent-start: #2dd4bf;
+  --toast-accent-end: #3b82f6;
+  --toast-glow: rgba(45, 212, 191, 0.16);
+  --toast-close-hover: rgba(148, 163, 184, 0.14);
   --scrollbar-track: rgba(15, 23, 42, 0.78);
   --scrollbar-thumb: rgba(45, 212, 191, 0.34);
   --scrollbar-thumb-strong: rgba(20, 184, 166, 0.7);
@@ -1074,6 +1086,132 @@ select {
   transform: none;
 }
 
+.toast-viewport {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(calc(100vw - 32px), 380px);
+  pointer-events: none;
+}
+
+.action-toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 16px 16px 18px;
+  overflow: hidden;
+  border: 1px solid var(--toast-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, var(--toast-glow), transparent 42%),
+    var(--toast-surface);
+  box-shadow: 0 22px 48px rgba(2, 6, 23, 0.24);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+  animation: toast-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.action-toast::before {
+  content: '';
+  position: absolute;
+  inset: 12px auto 12px 0;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    var(--toast-accent-start),
+    var(--toast-accent-end)
+  );
+}
+
+.action-toast__icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #f8fafc;
+  background: linear-gradient(
+    135deg,
+    var(--toast-accent-start),
+    var(--toast-accent-end)
+  );
+  box-shadow: 0 14px 28px var(--toast-glow);
+}
+
+.action-toast__icon-svg {
+  width: 22px;
+  height: 22px;
+}
+
+.action-toast__content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.action-toast__eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.action-toast__content strong {
+  color: var(--text-heading);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.action-toast__content span:last-child {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.action-toast__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.action-toast__close:hover {
+  background: var(--toast-close-hover);
+  color: var(--text-heading);
+  transform: translateY(-1px);
+}
+
+.action-toast__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.action-toast__progress {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--toast-accent-start),
+    var(--toast-accent-end)
+  );
+  transform-origin: left center;
+  animation: toast-progress 3.8s linear forwards;
+}
+
 .access-note {
   display: grid;
   gap: 2px;
@@ -1287,6 +1425,28 @@ select {
   max-width: 30ch;
 }
 
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
 @media (max-width: 980px) {
   .hero-panel,
   .summary-grid,
@@ -1334,6 +1494,12 @@ select {
 @media (max-width: 720px) {
   .app-shell {
     padding: 20px 14px 36px;
+  }
+
+  .toast-viewport {
+    top: 14px;
+    left: 50%;
+    width: min(calc(100vw - 28px), 380px);
   }
 
   .hero-panel,
@@ -1395,5 +1561,12 @@ select {
   .ghost-button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-toast,
+  .action-toast__progress {
+    animation: none;
   }
 }
