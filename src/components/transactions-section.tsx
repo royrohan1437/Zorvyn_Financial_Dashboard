@@ -1,13 +1,21 @@
-import { useDeferredValue, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useState } from 'react';
+import { TransactionEditorPanel } from './transaction-editor-panel';
+import { useDashboard } from '../state/dashboard-context';
 import type { Transaction } from '../types/finance';
 import { currencyFormatter } from '../utils/finance';
 import {
   applyTransactionFilters,
+  buildTransactionFromDraft,
+  createEmptyTransactionDraft,
+  createDraftFromTransaction,
   formatSignedTransactionAmount,
   formatTransactionDateLabel,
+  generateTransactionId,
   getTransactionCategories,
   summarizeTransactionActivity,
   transactionSortOptions,
+  type TransactionDraft,
+  type TransactionEditorMode,
   type TransactionCategoryFilter,
   type TransactionFilterType,
   type TransactionSortOption,
@@ -20,6 +28,7 @@ type TransactionsSectionProps = {
 export function TransactionsSection({
   transactions,
 }: TransactionsSectionProps) {
+  const { dispatch, selectedRole } = useDashboard();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] =
     useState<TransactionFilterType>('all');
@@ -27,7 +36,15 @@ export function TransactionsSection({
     useState<TransactionCategoryFilter>('all');
   const [sortOption, setSortOption] =
     useState<TransactionSortOption>('latest');
+  const [editorMode, setEditorMode] =
+    useState<TransactionEditorMode>('create');
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(
+    null,
+  );
+  const [editorDraft, setEditorDraft] = useState<TransactionDraft | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const isAdmin = selectedRole === 'admin';
+  const isEditorOpen = editorDraft !== null;
 
   const categories = getTransactionCategories(transactions);
   const visibleTransactions = applyTransactionFilters(transactions, {
@@ -43,11 +60,58 @@ export function TransactionsSection({
     selectedCategory !== 'all' ||
     sortOption !== 'latest';
 
+  useEffect(() => {
+    if (!isAdmin && isEditorOpen) {
+      setEditorDraft(null);
+      setEditingTransactionId(null);
+    }
+  }, [isAdmin, isEditorOpen]);
+
   function resetFilters() {
     setSearchTerm('');
     setSelectedType('all');
     setSelectedCategory('all');
     setSortOption('latest');
+  }
+
+  function openCreateEditor() {
+    setEditorMode('create');
+    setEditingTransactionId(null);
+    setEditorDraft(createEmptyTransactionDraft());
+  }
+
+  function openEditEditor(transaction: Transaction) {
+    setEditorMode('edit');
+    setEditingTransactionId(transaction.id);
+    setEditorDraft(createDraftFromTransaction(transaction));
+  }
+
+  function closeEditor() {
+    setEditingTransactionId(null);
+    setEditorDraft(null);
+  }
+
+  function handleEditorSubmit(draft: TransactionDraft) {
+    const nextTransaction = buildTransactionFromDraft(
+      draft,
+      editingTransactionId ?? generateTransactionId(),
+    );
+
+    const nextTransactions =
+      editorMode === 'create'
+        ? [nextTransaction, ...transactions]
+        : transactions.map((transaction) =>
+            transaction.id === editingTransactionId ? nextTransaction : transaction,
+          );
+
+    startTransition(() => {
+      dispatch({
+        type: 'set-transactions',
+        payload: nextTransactions,
+      });
+    });
+
+    closeEditor();
   }
 
   return (
@@ -149,16 +213,51 @@ export function TransactionsSection({
           </span>
         </div>
 
-        {hasActiveFilters ? (
+        <div className="transactions-meta__actions">
+          <div className={`access-note access-note--${selectedRole}`}>
+            <strong>{isAdmin ? 'Admin access enabled' : 'Viewer access'}</strong>
+            <span>
+              {isAdmin
+                ? 'Add and edit actions are available in this mode.'
+                : 'This mode is read-only. Switch to admin to make changes.'}
+            </span>
+          </div>
+
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={resetFilters}
+            >
+              Clear filters
+            </button>
+          ) : null}
+
           <button
             type="button"
-            className="ghost-button"
-            onClick={resetFilters}
+            className="primary-button"
+            onClick={openCreateEditor}
+            disabled={!isAdmin}
+            title={
+              isAdmin
+                ? 'Add a new transaction'
+                : 'Switch to admin mode to add transactions'
+            }
           >
-            Clear filters
+            {isAdmin ? 'Add transaction' : 'Admin can add transactions'}
           </button>
-        ) : null}
+        </div>
       </div>
+
+      {isAdmin && isEditorOpen && editorDraft ? (
+        <TransactionEditorPanel
+          key={`${editorMode}-${editingTransactionId ?? 'new'}`}
+          initialDraft={editorDraft}
+          mode={editorMode}
+          onCancel={closeEditor}
+          onSubmit={handleEditorSubmit}
+        />
+      ) : null}
 
       {transactions.length === 0 ? (
         <div className="empty-state empty-state--compact">
@@ -188,6 +287,7 @@ export function TransactionsSection({
                   <th scope="col">Category</th>
                   <th scope="col">Type</th>
                   <th scope="col">Amount</th>
+                  {isAdmin ? <th scope="col">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -217,6 +317,17 @@ export function TransactionsSection({
                         {formatSignedTransactionAmount(transaction)}
                       </span>
                     </td>
+                    {isAdmin ? (
+                      <td>
+                        <button
+                          type="button"
+                          className="table-action"
+                          onClick={() => openEditEditor(transaction)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -244,6 +355,18 @@ export function TransactionsSection({
                     {transaction.type}
                   </span>
                 </div>
+
+                {isAdmin ? (
+                  <div className="transaction-card__actions">
+                    <button
+                      type="button"
+                      className="table-action"
+                      onClick={() => openEditEditor(transaction)}
+                    >
+                      Edit transaction
+                    </button>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>

@@ -24,6 +24,7 @@ type DashboardContextValue = DashboardState & {
 };
 
 const THEME_STORAGE_KEY = 'zorvyn-dashboard-theme';
+const ROLE_STORAGE_KEY = 'zorvyn-dashboard-role';
 
 const initialState: DashboardState = {
   transactions: mockTransactions,
@@ -47,9 +48,20 @@ function getPreferredTheme(): ThemeMode {
     : 'light';
 }
 
+function getPreferredRole(): Role {
+  if (typeof window === 'undefined') {
+    return 'viewer';
+  }
+
+  return window.localStorage.getItem(ROLE_STORAGE_KEY) === 'admin'
+    ? 'admin'
+    : 'viewer';
+}
+
 function createInitialState(state: DashboardState): DashboardState {
   return {
     ...state,
+    selectedRole: getPreferredRole(),
     selectedTheme: getPreferredTheme(),
   };
 }
@@ -93,6 +105,10 @@ export function DashboardProvider({ children }: PropsWithChildren) {
     document.documentElement.style.colorScheme = state.selectedTheme;
     window.localStorage.setItem(THEME_STORAGE_KEY, state.selectedTheme);
   }, [state.selectedTheme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(ROLE_STORAGE_KEY, state.selectedRole);
+  }, [state.selectedRole]);
 
   return (
     <DashboardContext.Provider value={{ ...state, dispatch }}>

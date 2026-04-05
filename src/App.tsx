@@ -1,3 +1,4 @@
+import { startTransition } from 'react';
 import { DashboardHeader } from './components/dashboard-header';
 import { BalanceTrendChart } from './components/balance-trend-chart';
 import { OverviewCard } from './components/overview-card';
@@ -13,7 +14,7 @@ import {
 } from './utils/finance';
 
 function App() {
-  const { dispatch, selectedTheme, transactions } = useDashboard();
+  const { dispatch, selectedRole, selectedTheme, transactions } = useDashboard();
   const summary = getSummaryMetrics(transactions);
   const balanceTrend = buildBalanceTrend(transactions, summary.openingBalance);
   const spendingBreakdown = buildSpendingBreakdown(transactions);
@@ -26,11 +27,22 @@ function App() {
     });
   }
 
+  function handleRoleChange(nextRole: 'viewer' | 'admin') {
+    startTransition(() => {
+      dispatch({
+        type: 'set-role',
+        payload: nextRole,
+      });
+    });
+  }
+
   return (
     <div className="app-shell">
       <div className="app-shell__gradient" />
       <DashboardHeader
+        currentRole={selectedRole}
         currentTheme={selectedTheme}
+        onRoleChange={handleRoleChange}
         onThemeToggle={handleThemeToggle}
         timeWindowLabel={timeWindowLabel}
       />

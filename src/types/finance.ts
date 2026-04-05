@@ -3,16 +3,19 @@ export type TransactionType = 'income' | 'expense';
 export type Role = 'viewer' | 'admin';
 export type ThemeMode = 'light' | 'dark';
 
-export type TransactionCategory =
-  | 'Salary'
-  | 'Freelance'
-  | 'Food'
-  | 'Housing'
-  | 'Transport'
-  | 'Entertainment'
-  | 'Utilities'
-  | 'Healthcare'
-  | 'Savings';
+export const transactionCategories = [
+  'Salary',
+  'Freelance',
+  'Food',
+  'Housing',
+  'Transport',
+  'Entertainment',
+  'Utilities',
+  'Healthcare',
+  'Savings',
+] as const;
+
+export type TransactionCategory = (typeof transactionCategories)[number];
 
 export type Transaction = {
   id: string;

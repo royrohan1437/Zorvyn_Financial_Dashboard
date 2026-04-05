@@ -1,13 +1,17 @@
-import type { ThemeMode } from '../types/finance';
+import type { Role, ThemeMode } from '../types/finance';
 
 type DashboardHeaderProps = {
+  currentRole: Role;
   currentTheme: ThemeMode;
+  onRoleChange: (role: Role) => void;
   onThemeToggle: () => void;
   timeWindowLabel: string;
 };
 
 export function DashboardHeader({
+  currentRole,
   currentTheme,
+  onRoleChange,
   onThemeToggle,
   timeWindowLabel,
 }: DashboardHeaderProps) {
@@ -29,6 +33,18 @@ export function DashboardHeader({
           <span className="status-dot" />
           <span>Mock portfolio live</span>
         </div>
+        <label className="role-switcher">
+          <span className="dashboard-header__window-label">Role</span>
+          <select
+            className="role-switcher__select"
+            value={currentRole}
+            onChange={(event) => onRoleChange(event.target.value as Role)}
+            aria-label="Select dashboard role"
+          >
+            <option value="viewer">Viewer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
         <button
           type="button"
           className="theme-toggle"
