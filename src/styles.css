@@ -169,6 +169,7 @@ select {
 .dashboard-header__status,
 .role-switcher,
 .theme-toggle {
+  min-height: 64px;
   padding: 10px 14px;
   border: 1px solid var(--surface-border);
   border-radius: 999px;
@@ -185,6 +186,7 @@ select {
 .dashboard-header__window {
   display: grid;
   gap: 2px;
+  align-content: center;
 }
 
 .dashboard-header__window-label {
@@ -197,12 +199,14 @@ select {
 .dashboard-header__status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .role-switcher {
   display: grid;
   gap: 4px;
+  align-content: center;
 }
 
 .role-switcher__select {
@@ -221,6 +225,7 @@ select {
 .theme-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   color: var(--theme-toggle-copy);
   cursor: pointer;
