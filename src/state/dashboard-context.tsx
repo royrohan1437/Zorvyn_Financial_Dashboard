@@ -13,11 +13,13 @@ import type {
   ThemeMode,
   Transaction,
 } from '../types/finance';
+import { transactionCategories } from '../types/finance';
 
 type DashboardAction =
   | { type: 'set-role'; payload: Role }
   | { type: 'set-theme'; payload: ThemeMode }
-  | { type: 'set-transactions'; payload: Transaction[] };
+  | { type: 'set-transactions'; payload: Transaction[] }
+  | { type: 'reset-transactions' };
 
 type DashboardContextValue = DashboardState & {
   dispatch: Dispatch<DashboardAction>;
@@ -25,6 +27,7 @@ type DashboardContextValue = DashboardState & {
 
 const THEME_STORAGE_KEY = 'zorvyn-dashboard-theme';
 const ROLE_STORAGE_KEY = 'zorvyn-dashboard-role';
+const TRANSACTIONS_STORAGE_KEY = 'zorvyn-dashboard-transactions';
 
 const initialState: DashboardState = {
   transactions: mockTransactions,
@@ -58,11 +61,56 @@ function getPreferredRole(): Role {
     : 'viewer';
 }
 
+function isValidTransaction(transaction: unknown): transaction is Transaction {
+  if (!transaction || typeof transaction !== 'object') {
+    return false;
+  }
+
+  const candidate = transaction as Record<string, unknown>;
+
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(candidate.date) &&
+    typeof candidate.description === 'string' &&
+    typeof candidate.amount === 'number' &&
+    Number.isFinite(candidate.amount) &&
+    transactionCategories.includes(
+      candidate.category as (typeof transactionCategories)[number],
+    ) &&
+    (candidate.type === 'income' || candidate.type === 'expense')
+  );
+}
+
+function getPreferredTransactions(): Transaction[] {
+  if (typeof window === 'undefined') {
+    return mockTransactions;
+  }
+
+  const savedTransactions = window.localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+
+  if (!savedTransactions) {
+    return mockTransactions;
+  }
+
+  try {
+    const parsedTransactions = JSON.parse(savedTransactions);
+
+    return Array.isArray(parsedTransactions) &&
+      parsedTransactions.every(isValidTransaction)
+      ? parsedTransactions
+      : mockTransactions;
+  } catch {
+    return mockTransactions;
+  }
+}
+
 function createInitialState(state: DashboardState): DashboardState {
   return {
     ...state,
     selectedRole: getPreferredRole(),
     selectedTheme: getPreferredTheme(),
+    transactions: getPreferredTransactions(),
   };
 }
 
@@ -88,6 +136,11 @@ function dashboardReducer(
         ...state,
         transactions: action.payload,
       };
+    case 'reset-transactions':
+      return {
+        ...state,
+        transactions: mockTransactions,
+      };
     default:
       return state;
   }
@@ -109,6 +162,13 @@ export function DashboardProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     window.localStorage.setItem(ROLE_STORAGE_KEY, state.selectedRole);
   }, [state.selectedRole]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      TRANSACTIONS_STORAGE_KEY,
+      JSON.stringify(state.transactions),
+    );
+  }, [state.transactions]);
 
   return (
     <DashboardContext.Provider value={{ ...state, dispatch }}>

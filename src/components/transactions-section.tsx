@@ -114,6 +114,20 @@ export function TransactionsSection({
     closeEditor();
   }
 
+  function handleRestoreDemoData() {
+    if (!window.confirm('Restore the original demo transactions?')) {
+      return;
+    }
+
+    startTransition(() => {
+      dispatch({
+        type: 'reset-transactions',
+      });
+    });
+
+    closeEditor();
+  }
+
   return (
     <section
       className="transactions-panel"
@@ -223,6 +237,10 @@ export function TransactionsSection({
             </span>
           </div>
 
+          <span className="persistence-note">
+            Transaction changes save locally in this browser.
+          </span>
+
           {hasActiveFilters ? (
             <button
               type="button"
@@ -246,6 +264,16 @@ export function TransactionsSection({
           >
             {isAdmin ? 'Add transaction' : 'Admin can add transactions'}
           </button>
+
+          {isAdmin ? (
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={handleRestoreDemoData}
+            >
+              Restore demo data
+            </button>
+          ) : null}
         </div>
       </div>
 

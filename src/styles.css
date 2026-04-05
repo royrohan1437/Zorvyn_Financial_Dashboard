@@ -751,6 +751,11 @@ select {
   flex-wrap: wrap;
 }
 
+.persistence-note {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
 .stat-chip,
 .category-pill,
 .type-badge {
@@ -1085,6 +1090,10 @@ select {
   .editor-form__actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .persistence-note {
+    width: 100%;
   }
 
   .transactions-toolbar {
