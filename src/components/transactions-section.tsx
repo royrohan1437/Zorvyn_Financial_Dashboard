@@ -101,13 +101,17 @@ export function TransactionsSection({
       ? getTransactionExportRangeLabel(selectedExportRange)
       : null;
   const exportAnchorLabel = getTransactionExportAnchorLabel(visibleTransactions);
-  const canDownloadStatement = selectedExportRange != null;
+  const hasExportResults = exportTransactions.length > 0;
+  const canDownloadStatement =
+    selectedExportRange != null && hasExportResults;
+  const hasExpenseDrilldown =
+    selectedType === 'expense' && selectedCategory !== 'all';
   const exportSummaryCopy =
     selectedExportRange == null
       ? 'Select one time span to enable statement download.'
-      : exportTransactions.length > 0
+      : hasExportResults
         ? `${exportTransactions.length} records match the ${exportRangeLabel?.toLowerCase()} statement, anchored to ${exportAnchorLabel}.`
-        : `No visible transactions fall inside the ${exportRangeLabel?.toLowerCase()} statement window.`;
+        : `No visible transactions fall inside the ${exportRangeLabel?.toLowerCase()} statement window. Choose a wider time span or clear filters to continue.`;
   const hasActiveFilters =
     searchTerm.trim().length > 0 ||
     selectedType !== 'all' ||
@@ -174,10 +178,23 @@ export function TransactionsSection({
     };
   }, [isFormatMenuOpen, isStatementMenuOpen]);
 
+  useEffect(() => {
+    if (selectedExportRange == null || hasExportResults) {
+      return;
+    }
+
+    setIsFormatMenuOpen(false);
+  }, [hasExportResults, selectedExportRange]);
+
   function resetFilters() {
     setSearchTerm('');
     setSortOption('latest');
     onResetFilters();
+  }
+
+  function clearExpenseDrilldown() {
+    onTypeChange('all');
+    onCategoryChange('all');
   }
 
   function openCreateEditor() {
@@ -434,6 +451,20 @@ export function TransactionsSection({
           <span className="stat-chip stat-chip--expense">
             Expenses {currencyFormatter.format(visibleSummary.expenses)}
           </span>
+          {hasExpenseDrilldown ? (
+            <button
+              type="button"
+              className="active-filter-chip"
+              onClick={clearExpenseDrilldown}
+              aria-label={`Clear expense chart filter for ${selectedCategory}`}
+            >
+              <span className="active-filter-chip__label">Active filter</span>
+              <strong className="active-filter-chip__value">
+                Expense chart: {selectedCategory}
+              </strong>
+              <span className="active-filter-chip__clear">Clear</span>
+            </button>
+          ) : null}
         </div>
 
         <div className="transactions-meta__actions">
@@ -505,7 +536,15 @@ export function TransactionsSection({
                 </div>
 
                 <div className="statement-export__footer">
-                  <p className="statement-export__helper">{exportSummaryCopy}</p>
+                  <p
+                    className={`statement-export__helper${
+                      selectedExportRange != null && !hasExportResults
+                        ? ' statement-export__helper--warning'
+                        : ''
+                    }`}
+                  >
+                    {exportSummaryCopy}
+                  </p>
 
                   <div className="statement-export__download-wrap">
                     <button

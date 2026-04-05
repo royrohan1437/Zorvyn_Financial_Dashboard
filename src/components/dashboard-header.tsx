@@ -26,7 +26,7 @@ export function DashboardHeader({
 
       <div className="dashboard-header__meta">
         <div className="dashboard-header__window">
-          <span className="dashboard-header__window-label">Tracking</span>
+          <span className="dashboard-header__window-label"></span>
           <strong>{timeWindowLabel}</strong>
         </div>
         <div className="dashboard-header__status">
@@ -34,7 +34,7 @@ export function DashboardHeader({
           <span>Mock portfolio live</span>
         </div>
         <label className="role-switcher">
-          <span className="dashboard-header__window-label">Role</span>
+          <span className="dashboard-header__window-label"></span>
           <select
             className="role-switcher__select"
             value={currentRole}
