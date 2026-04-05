@@ -24,14 +24,21 @@ const currency = new Intl.NumberFormat('en-US', {
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
+  timeZone: 'UTC',
 });
 
 const monthYearFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   year: 'numeric',
+  timeZone: 'UTC',
 });
 
 export const currencyFormatter = currency;
+
+function parseTransactionDate(dateString: string) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
 
 export function getSummaryMetrics(transactions: Transaction[]) {
   const income = transactions
@@ -75,7 +82,7 @@ export function buildBalanceTrend(
   [...transactions]
     .sort((left, right) => left.date.localeCompare(right.date))
     .forEach((transaction) => {
-      const date = new Date(transaction.date);
+      const date = parseTransactionDate(transaction.date);
       const year = date.getUTCFullYear();
       const month = date.getUTCMonth();
       const key = `${year}-${month}`;
@@ -157,8 +164,10 @@ export function getTransactionWindowLabel(transactions: Transaction[]) {
     left.date.localeCompare(right.date),
   );
 
-  const firstDate = new Date(sortedTransactions[0].date);
-  const lastDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
+  const firstDate = parseTransactionDate(sortedTransactions[0].date);
+  const lastDate = parseTransactionDate(
+    sortedTransactions[sortedTransactions.length - 1].date,
+  );
 
   return `${monthYearFormatter.format(firstDate)} to ${monthYearFormatter.format(
     lastDate,

@@ -2,6 +2,7 @@ import { DashboardHeader } from './components/dashboard-header';
 import { BalanceTrendChart } from './components/balance-trend-chart';
 import { OverviewCard } from './components/overview-card';
 import { SpendingBreakdownChart } from './components/spending-breakdown-chart';
+import { TransactionsSection } from './components/transactions-section';
 import { useDashboard } from './state/dashboard-context';
 import {
   buildBalanceTrend,
@@ -90,6 +91,8 @@ function App() {
           />
           <SpendingBreakdownChart data={spendingBreakdown} />
         </section>
+
+        <TransactionsSection transactions={transactions} />
       </main>
     </div>
   );
