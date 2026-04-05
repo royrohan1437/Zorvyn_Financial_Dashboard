@@ -1,9 +1,27 @@
-import { startTransition, useDeferredValue, useEffect, useState } from 'react';
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { ActionToast } from './action-toast';
 import { TransactionEditorPanel } from './transaction-editor-panel';
 import { useDashboard } from '../state/dashboard-context';
 import type { Transaction } from '../types/finance';
 import { currencyFormatter } from '../utils/finance';
+import {
+  buildTransactionExportFilename,
+  buildTransactionsCsv,
+  buildTransactionsJson,
+  downloadExportFile,
+  filterTransactionsByExportRange,
+  getTransactionExportAnchorLabel,
+  getTransactionExportRangeLabel,
+  transactionExportRangeOptions,
+  type TransactionExportFormat,
+  type TransactionExportRange,
+} from '../utils/transaction-export';
 import {
   applyTransactionFilters,
   buildTransactionFromDraft,
@@ -31,7 +49,7 @@ type TransactionsSectionProps = {
   transactions: Transaction[];
 };
 
-type TransactionToast = {
+type DashboardToast = {
   id: number;
   eyebrow: string;
   title: string;
@@ -50,13 +68,18 @@ export function TransactionsSection({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] =
     useState<TransactionSortOption>('latest');
+  const [selectedExportRange, setSelectedExportRange] =
+    useState<TransactionExportRange | null>(null);
+  const [isStatementMenuOpen, setIsStatementMenuOpen] = useState(false);
+  const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
   const [editorMode, setEditorMode] =
     useState<TransactionEditorMode>('create');
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(
     null,
   );
   const [editorDraft, setEditorDraft] = useState<TransactionDraft | null>(null);
-  const [toast, setToast] = useState<TransactionToast | null>(null);
+  const [toast, setToast] = useState<DashboardToast | null>(null);
+  const statementExportRef = useRef<HTMLDivElement | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const isAdmin = selectedRole === 'admin';
   const isEditorOpen = editorDraft !== null;
@@ -69,6 +92,22 @@ export function TransactionsSection({
     sort: sortOption,
   });
   const visibleSummary = summarizeTransactionActivity(visibleTransactions);
+  const exportTransactions =
+    selectedExportRange != null
+      ? filterTransactionsByExportRange(visibleTransactions, selectedExportRange)
+      : [];
+  const exportRangeLabel =
+    selectedExportRange != null
+      ? getTransactionExportRangeLabel(selectedExportRange)
+      : null;
+  const exportAnchorLabel = getTransactionExportAnchorLabel(visibleTransactions);
+  const canDownloadStatement = selectedExportRange != null;
+  const exportSummaryCopy =
+    selectedExportRange == null
+      ? 'Select one time span to enable statement download.'
+      : exportTransactions.length > 0
+        ? `${exportTransactions.length} records match the ${exportRangeLabel?.toLowerCase()} statement, anchored to ${exportAnchorLabel}.`
+        : `No visible transactions fall inside the ${exportRangeLabel?.toLowerCase()} statement window.`;
   const hasActiveFilters =
     searchTerm.trim().length > 0 ||
     selectedType !== 'all' ||
@@ -98,6 +137,43 @@ export function TransactionsSection({
     };
   }, [toast]);
 
+  useEffect(() => {
+    if (!isStatementMenuOpen && !isFormatMenuOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+
+      if (
+        target instanceof Node &&
+        statementExportRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setIsStatementMenuOpen(false);
+      setIsFormatMenuOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      setIsStatementMenuOpen(false);
+      setIsFormatMenuOpen(false);
+    }
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [isFormatMenuOpen, isStatementMenuOpen]);
+
   function resetFilters() {
     setSearchTerm('');
     setSortOption('latest');
@@ -125,12 +201,19 @@ export function TransactionsSection({
     setToast(null);
   }
 
+  function showToast(toastCopy: Omit<DashboardToast, 'id'>) {
+    setToast({
+      id: Date.now(),
+      ...toastCopy,
+    });
+  }
+
   function showTransactionToast(
     mode: TransactionEditorMode,
     transaction: Transaction,
   ) {
     const amountLabel = currencyFormatter.format(transaction.amount);
-    const toastCopy =
+    showToast(
       mode === 'create'
         ? {
             eyebrow: 'Admin activity',
@@ -141,12 +224,79 @@ export function TransactionsSection({
             eyebrow: 'Admin activity',
             title: 'Changes saved',
             message: `${transaction.description} is now saved under ${transaction.category} for ${amountLabel}.`,
-          };
+          },
+    );
+  }
 
-    setToast({
-      id: Date.now(),
-      ...toastCopy,
+  function handleExport(format: TransactionExportFormat) {
+    if (!selectedExportRange) {
+      showToast({
+        eyebrow: 'Export',
+        title: 'Select a time span',
+        message:
+          'Choose one statement window before picking a download format.',
+      });
+      return;
+    }
+
+    if (exportTransactions.length === 0) {
+      showToast({
+        eyebrow: 'Export',
+        title: 'Nothing to export',
+        message:
+          'Adjust the current filters or export window to include at least one transaction.',
+      });
+      return;
+    }
+
+    const filename = buildTransactionExportFilename(
+      visibleTransactions,
+      selectedExportRange,
+      format,
+    );
+    const fileContents =
+      format === 'csv'
+        ? buildTransactionsCsv(exportTransactions)
+        : buildTransactionsJson(exportTransactions, selectedExportRange);
+    const mimeType =
+      format === 'csv'
+        ? 'text/csv;charset=utf-8'
+        : 'application/json;charset=utf-8';
+
+    downloadExportFile(filename, fileContents, mimeType);
+    setIsFormatMenuOpen(false);
+    setIsStatementMenuOpen(false);
+
+    showToast({
+      eyebrow: 'Statement ready',
+      title: `${format.toUpperCase()} downloaded`,
+      message: `${exportTransactions.length} transactions exported from the ${exportRangeLabel?.toLowerCase()} statement.`,
     });
+  }
+
+  function toggleStatementMenu() {
+    setIsStatementMenuOpen((currentValue) => {
+      const nextValue = !currentValue;
+
+      if (!nextValue) {
+        setIsFormatMenuOpen(false);
+      }
+
+      return nextValue;
+    });
+  }
+
+  function handleExportRangeSelect(range: TransactionExportRange) {
+    setSelectedExportRange(range);
+    setIsFormatMenuOpen(false);
+  }
+
+  function toggleFormatMenu() {
+    if (!canDownloadStatement) {
+      return;
+    }
+
+    setIsFormatMenuOpen((currentValue) => !currentValue);
   }
 
   function handleEditorSubmit(draft: TransactionDraft) {
@@ -299,6 +449,113 @@ export function TransactionsSection({
           <span className="persistence-note">
             Transaction changes save locally in this browser.
           </span>
+
+          <div className="statement-export" ref={statementExportRef}>
+            <button
+              type="button"
+              className={`statement-export__trigger${
+                isStatementMenuOpen ? ' statement-export__trigger--open' : ''
+              }`}
+              onClick={toggleStatementMenu}
+              aria-expanded={isStatementMenuOpen}
+              aria-controls="statement-export-panel"
+            >
+              <span>Download Statement</span>
+              <span className="statement-export__chevron" aria-hidden="true">
+                v
+              </span>
+            </button>
+
+            {isStatementMenuOpen ? (
+              <div
+                className="statement-export__panel"
+                id="statement-export-panel"
+              >
+                <div
+                  className="statement-export__options"
+                  role="radiogroup"
+                  aria-label="Select statement time span"
+                >
+                  {transactionExportRangeOptions.map((option) => {
+                    const isSelected = selectedExportRange === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`statement-export__option${
+                          isSelected ? ' statement-export__option--selected' : ''
+                        }`}
+                        onClick={() => handleExportRangeSelect(option.value)}
+                        role="radio"
+                        aria-checked={isSelected}
+                      >
+                        <span>{option.label}</span>
+                        <span
+                          className={`statement-export__indicator${
+                            isSelected
+                              ? ' statement-export__indicator--selected'
+                              : ''
+                          }`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="statement-export__footer">
+                  <p className="statement-export__helper">{exportSummaryCopy}</p>
+
+                  <div className="statement-export__download-wrap">
+                    <button
+                      type="button"
+                      className={`statement-export__download${
+                        isFormatMenuOpen
+                          ? ' statement-export__download--open'
+                          : ''
+                      }`}
+                      onClick={toggleFormatMenu}
+                      disabled={!canDownloadStatement}
+                      aria-expanded={isFormatMenuOpen}
+                      aria-controls="statement-export-format-menu"
+                    >
+                      <span>Download</span>
+                      <span className="statement-export__chevron" aria-hidden="true">
+                        v
+                      </span>
+                    </button>
+
+                    {isFormatMenuOpen ? (
+                      <div
+                        className="statement-export__format-menu"
+                        id="statement-export-format-menu"
+                        role="menu"
+                        aria-label="Select download format"
+                      >
+                        <button
+                          type="button"
+                          className="statement-export__format-option"
+                          onClick={() => handleExport('json')}
+                          role="menuitem"
+                        >
+                          JSON
+                        </button>
+                        <button
+                          type="button"
+                          className="statement-export__format-option"
+                          onClick={() => handleExport('csv')}
+                          role="menuitem"
+                        >
+                          CSV
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
 
           {hasActiveFilters ? (
             <button

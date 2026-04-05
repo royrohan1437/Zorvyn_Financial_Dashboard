@@ -1051,6 +1051,14 @@ select {
   color: var(--ink-soft);
 }
 
+.field--compact {
+  gap: 6px;
+}
+
+.field--compact .field__label {
+  font-size: 0.72rem;
+}
+
 .field__control {
   width: 100%;
   min-height: 46px;
@@ -1147,6 +1155,214 @@ select option {
   flex-wrap: wrap;
 }
 
+.statement-export {
+  position: relative;
+  min-width: min(100%, 320px);
+}
+
+.statement-export__trigger,
+.statement-export__download,
+.statement-export__option,
+.statement-export__format-option {
+  font-family: inherit;
+}
+
+.statement-export__trigger,
+.statement-export__download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text-heading);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.statement-export__trigger {
+  min-width: min(100%, 320px);
+}
+
+.statement-export__trigger:hover,
+.statement-export__download:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--field-border-focus);
+  background: var(--select-surface-hover);
+}
+
+.statement-export__trigger:focus-visible,
+.statement-export__download:focus-visible,
+.statement-export__option:focus-visible,
+.statement-export__format-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.statement-export__trigger--open,
+.statement-export__download--open {
+  border-color: var(--field-border-focus);
+  background: var(--select-surface-hover);
+}
+
+.statement-export__chevron {
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.statement-export__trigger--open .statement-export__chevron,
+.statement-export__download--open .statement-export__chevron {
+  transform: rotate(180deg);
+}
+
+.statement-export__panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 12;
+  width: min(calc(100vw - 48px), 430px);
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top right, var(--chart-accent-fade), transparent 46%),
+    var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.statement-export__options {
+  display: grid;
+  gap: 8px;
+}
+
+.statement-export__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 15px 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-heading);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.statement-export__option:hover {
+  transform: translateY(-1px);
+  background: var(--subtle-fill);
+}
+
+.statement-export__option--selected {
+  border-color: var(--field-border-focus);
+  background: var(--subtle-fill);
+}
+
+.statement-export__indicator {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  flex: 0 0 auto;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.statement-export__indicator--selected {
+  border-color: var(--accent);
+  background: var(--chart-accent-fade);
+  box-shadow: inset 0 0 0 5px var(--accent);
+}
+
+.statement-export__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.statement-export__helper {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  max-width: 30ch;
+}
+
+.statement-export__download-wrap {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.statement-export__download {
+  min-width: 156px;
+}
+
+.statement-export__download:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+}
+
+.statement-export__format-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 13;
+  width: 136px;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(16px);
+}
+
+.statement-export__format-option {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-heading);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.statement-export__format-option:hover {
+  transform: translateY(-1px);
+  border-color: var(--field-border-focus);
+  background: var(--subtle-fill);
+}
+
 .persistence-note {
   color: var(--ink-soft);
   font-size: 0.9rem;
@@ -1206,6 +1422,12 @@ select option {
 .ghost-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.ghost-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
 }
 
 .ghost-button--spaced {
@@ -1781,6 +2003,37 @@ select option {
     width: 100%;
   }
 
+  .statement-export {
+    width: 100%;
+  }
+
+  .statement-export__trigger {
+    width: 100%;
+  }
+
+  .statement-export__panel {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin-top: 12px;
+  }
+
+  .statement-export__footer {
+    flex-direction: column;
+  }
+
+  .statement-export__helper,
+  .statement-export__download-wrap,
+  .statement-export__download {
+    width: 100%;
+    max-width: none;
+  }
+
+  .statement-export__format-menu {
+    position: static;
+    width: 100%;
+  }
+
   .transactions-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1863,6 +2116,10 @@ select option {
 
   .editor-form__actions {
     flex-direction: column;
+  }
+
+  .statement-export__option {
+    padding: 14px 12px;
   }
 
   .theme-toggle,
