@@ -5,12 +5,15 @@ import {
 
 type OverviewCardProps = {
   label: string;
-  value: string;
+  value: number;
   delta: string;
   description: string;
   emptyLabel: string;
+  hintText?: string;
+  selectedSegmentLabel?: string | null;
   segments: CircularBreakdownSegment[];
   tone: 'neutral' | 'positive' | 'negative';
+  onSegmentSelect?: (segment: CircularBreakdownSegment) => void;
 };
 
 export function OverviewCard({
@@ -19,8 +22,11 @@ export function OverviewCard({
   delta,
   description,
   emptyLabel,
+  hintText,
+  selectedSegmentLabel,
   segments,
   tone,
+  onSegmentSelect,
 }: OverviewCardProps) {
   return (
     <article className={`overview-card overview-card--${tone}`}>
@@ -33,7 +39,10 @@ export function OverviewCard({
         centerLabel={label}
         centerValue={value}
         emptyLabel={emptyLabel}
+        hintText={hintText}
+        selectedSegmentLabel={selectedSegmentLabel}
         segments={segments}
+        onSegmentSelect={onSegmentSelect}
       />
 
       <p className="overview-card__description">{description}</p>

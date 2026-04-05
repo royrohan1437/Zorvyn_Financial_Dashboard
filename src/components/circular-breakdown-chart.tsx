@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useCountUp } from '../hooks/use-count-up';
 import { currencyFormatter, type CircularBreakdownSlice } from '../utils/finance';
 
 export type CircularBreakdownSegment = CircularBreakdownSlice & {
@@ -7,9 +8,12 @@ export type CircularBreakdownSegment = CircularBreakdownSlice & {
 
 type CircularBreakdownChartProps = {
   centerLabel: string;
-  centerValue: string;
+  centerValue: number;
   emptyLabel: string;
+  hintText?: string;
+  selectedSegmentLabel?: string | null;
   segments: CircularBreakdownSegment[];
+  onSegmentSelect?: (segment: CircularBreakdownSegment) => void;
 };
 
 const chartSize = 208;
@@ -22,21 +26,36 @@ export function CircularBreakdownChart({
   centerLabel,
   centerValue,
   emptyLabel,
+  hintText,
+  selectedSegmentLabel,
   segments,
+  onSegmentSelect,
 }: CircularBreakdownChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activeSegment =
     activeIndex != null && activeIndex >= 0 && activeIndex < segments.length
       ? segments[activeIndex]
       : null;
+  const hasActiveSegment = activeSegment != null;
   const totalValue = segments.reduce((sum, segment) => sum + segment.value, 0);
+  const animatedCenterValue = useCountUp(centerValue);
   const displayedLabel = activeSegment?.label ?? centerLabel;
   const displayedValue =
     activeSegment != null
       ? currencyFormatter.format(activeSegment.value)
-      : centerValue;
+      : currencyFormatter.format(animatedCenterValue);
+  const centerKey = activeSegment?.label ?? `default-${centerLabel}`;
 
   let cumulativeOffset = 0;
+
+  function handleSegmentSelect(index: number) {
+    if (!onSegmentSelect) {
+      setActiveIndex(index);
+      return;
+    }
+
+    onSegmentSelect(segments[index]);
+  }
 
   return (
     <div className="radial-chart">
@@ -65,19 +84,26 @@ export function CircularBreakdownChart({
             }`;
             const strokeDashoffset = -cumulativeOffset;
             cumulativeOffset += segmentLength;
+            const isSelected = selectedSegmentLabel === segment.label;
+            const isActive = index === activeIndex;
+            const isDimmed = hasActiveSegment && !isActive;
 
             return (
               <circle
                 key={segment.label}
                 className={`radial-chart__segment${
-                  index === activeIndex ? ' radial-chart__segment--active' : ''
+                  isActive ? ' radial-chart__segment--active' : ''
+                }${isDimmed ? ' radial-chart__segment--dimmed' : ''}${
+                  isSelected ? ' radial-chart__segment--selected' : ''
                 }`}
                 cx={centerCoordinate}
                 cy={centerCoordinate}
                 r={radius}
                 fill="none"
                 stroke={segment.color}
-                strokeWidth={index === activeIndex ? strokeWidth + 2 : strokeWidth}
+                strokeWidth={
+                  isActive || isSelected ? strokeWidth + 2 : strokeWidth
+                }
                 strokeDasharray={strokeDasharray}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
@@ -85,6 +111,15 @@ export function CircularBreakdownChart({
                 onMouseEnter={() => setActiveIndex(index)}
                 onFocus={() => setActiveIndex(index)}
                 onBlur={() => setActiveIndex(null)}
+                onClick={() => handleSegmentSelect(index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSegmentSelect(index);
+                  }
+                }}
+                role={onSegmentSelect ? 'button' : undefined}
+                aria-pressed={onSegmentSelect ? isSelected : undefined}
                 tabIndex={0}
               >
                 <title>
@@ -96,46 +131,59 @@ export function CircularBreakdownChart({
         </svg>
 
         <div className="radial-chart__center">
-          <span className="radial-chart__center-label">{displayedLabel}</span>
-          <strong className="radial-chart__center-value">{displayedValue}</strong>
-          {activeSegment ? (
-            <span className="radial-chart__center-meta">{activeSegment.share}%</span>
-          ) : null}
+          <div key={centerKey} className="radial-chart__center-copy">
+            <span className="radial-chart__center-label">{displayedLabel}</span>
+            <strong className="radial-chart__center-value">{displayedValue}</strong>
+            {activeSegment ? (
+              <span className="radial-chart__center-meta">
+                {activeSegment.share}%
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
       <div className="radial-chart__hint">
         {segments.length > 0
-          ? 'Hover a slice to preview its category amount in the center.'
+          ? hintText ?? 'Hover a slice to preview its category amount in the center.'
           : emptyLabel}
       </div>
 
       {segments.length > 0 ? (
         <div className="radial-chart__legend">
-          {segments.map((segment, index) => (
-            <button
-              key={segment.label}
-              type="button"
-              className={`radial-chart__legend-item${
-                index === activeIndex ? ' radial-chart__legend-item--active' : ''
-              }`}
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-              onFocus={() => setActiveIndex(index)}
-              onBlur={() => setActiveIndex(null)}
-              onClick={() => setActiveIndex(index)}
-            >
-              <span className="radial-chart__legend-label">
-                <span
-                  className="radial-chart__legend-swatch"
-                  style={{ backgroundColor: segment.color }}
-                  aria-hidden="true"
-                />
-                <span>{segment.label}</span>
-              </span>
-              <span>{currencyFormatter.format(segment.value)}</span>
-            </button>
-          ))}
+          {segments.map((segment, index) => {
+            const isActive = index === activeIndex;
+            const isSelected = selectedSegmentLabel === segment.label;
+            const isDimmed = hasActiveSegment && !isActive;
+
+            return (
+              <button
+                key={segment.label}
+                type="button"
+                className={`radial-chart__legend-item${
+                  isActive ? ' radial-chart__legend-item--active' : ''
+                }${isDimmed ? ' radial-chart__legend-item--dimmed' : ''}${
+                  isSelected ? ' radial-chart__legend-item--selected' : ''
+                }`}
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+                onFocus={() => setActiveIndex(index)}
+                onBlur={() => setActiveIndex(null)}
+                onClick={() => handleSegmentSelect(index)}
+                aria-pressed={onSegmentSelect ? isSelected : undefined}
+              >
+                <span className="radial-chart__legend-label">
+                  <span
+                    className="radial-chart__legend-swatch"
+                    style={{ backgroundColor: segment.color }}
+                    aria-hidden="true"
+                  />
+                  <span>{segment.label}</span>
+                </span>
+                <span>{currencyFormatter.format(segment.value)}</span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

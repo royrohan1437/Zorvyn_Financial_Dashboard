@@ -1,11 +1,13 @@
-import { startTransition } from 'react';
+import { startTransition, useState } from 'react';
 import { DashboardHeader } from './components/dashboard-header';
 import { BalanceTrendChart } from './components/balance-trend-chart';
 import { InsightsSection } from './components/insights-section';
 import { OverviewCard } from './components/overview-card';
+import { ScrollToTopButton } from './components/scroll-to-top-button';
 import { SpendingBreakdownChart } from './components/spending-breakdown-chart';
 import { TransactionsSection } from './components/transactions-section';
 import { useDashboard } from './state/dashboard-context';
+import { transactionCategories, type TransactionCategory } from './types/finance';
 import {
   buildBalanceComposition,
   buildBalanceTrend,
@@ -16,6 +18,10 @@ import {
   getSummaryMetrics,
   getTransactionWindowLabel,
 } from './utils/finance';
+import type {
+  TransactionCategoryFilter,
+  TransactionFilterType,
+} from './utils/transactions';
 
 const balancePalette = ['#2563eb', '#16a34a', '#d97706'];
 const incomePalette = ['#0f766e', '#16a34a', '#0ea5e9', '#0891b2'];
@@ -40,6 +46,10 @@ function assignChartColors<T extends { label: string; value: number; share: numb
 
 function App() {
   const { dispatch, selectedRole, selectedTheme, transactions } = useDashboard();
+  const [selectedTransactionType, setSelectedTransactionType] =
+    useState<TransactionFilterType>('all');
+  const [selectedTransactionCategory, setSelectedTransactionCategory] =
+    useState<TransactionCategoryFilter>('all');
   const summary = getSummaryMetrics(transactions);
   const balanceTrend = buildBalanceTrend(transactions, summary.openingBalance);
   const spendingBreakdown = buildSpendingBreakdown(transactions);
@@ -72,6 +82,38 @@ function App() {
       });
     });
   }
+
+  function handleTransactionTypeChange(nextType: TransactionFilterType) {
+    setSelectedTransactionType(nextType);
+  }
+
+  function handleTransactionCategoryChange(nextCategory: TransactionCategoryFilter) {
+    setSelectedTransactionCategory(nextCategory);
+  }
+
+  function resetTransactionFilters() {
+    setSelectedTransactionType('all');
+    setSelectedTransactionCategory('all');
+  }
+
+  function handleExpenseSegmentSelect(segment: { label: string }) {
+    if (!transactionCategories.includes(segment.label as TransactionCategory)) {
+      return;
+    }
+
+    const nextCategory = segment.label as TransactionCategoryFilter;
+    const isSameSelection =
+      selectedTransactionType === 'expense' &&
+      selectedTransactionCategory === nextCategory;
+
+    setSelectedTransactionType(isSameSelection ? 'all' : 'expense');
+    setSelectedTransactionCategory(isSameSelection ? 'all' : nextCategory);
+  }
+
+  const selectedExpenseSegmentLabel =
+    selectedTransactionType === 'expense' && selectedTransactionCategory !== 'all'
+      ? selectedTransactionCategory
+      : null;
 
   return (
     <div className="app-shell">
@@ -110,7 +152,7 @@ function App() {
         <section className="summary-grid" aria-label="Financial summary">
           <OverviewCard
             label="Total balance"
-            value={currencyFormatter.format(summary.totalBalance)}
+            value={summary.totalBalance}
             delta={`${summary.balanceChange >= 0 ? '+' : ''}${currencyFormatter.format(
               summary.balanceChange,
             )}`}
@@ -121,7 +163,7 @@ function App() {
           />
           <OverviewCard
             label="Income"
-            value={currencyFormatter.format(summary.income)}
+            value={summary.income}
             delta={`${summary.incomeShare}% of activity`}
             emptyLabel="No income categories yet."
             segments={incomeBreakdown}
@@ -130,12 +172,15 @@ function App() {
           />
           <OverviewCard
             label="Expenses"
-            value={currencyFormatter.format(summary.expenses)}
+            value={summary.expenses}
             delta={`${summary.expenseShare}% of activity`}
             emptyLabel="No expense categories yet."
+            hintText="Hover to preview. Click a category to filter the transactions below."
+            selectedSegmentLabel={selectedExpenseSegmentLabel}
             segments={expenseBreakdown}
             tone="negative"
             description="Each expense slice shows how much a category is consuming from total outflow."
+            onSegmentSelect={handleExpenseSegmentSelect}
           />
         </section>
 
@@ -149,8 +194,17 @@ function App() {
 
         <InsightsSection transactions={transactions} />
 
-        <TransactionsSection transactions={transactions} />
+        <TransactionsSection
+          transactions={transactions}
+          selectedCategory={selectedTransactionCategory}
+          selectedType={selectedTransactionType}
+          onCategoryChange={handleTransactionCategoryChange}
+          onResetFilters={resetTransactionFilters}
+          onTypeChange={handleTransactionTypeChange}
+        />
       </main>
+
+      <ScrollToTopButton />
     </div>
   );
 }

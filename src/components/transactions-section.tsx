@@ -23,6 +23,11 @@ import {
 } from '../utils/transactions';
 
 type TransactionsSectionProps = {
+  onCategoryChange: (category: TransactionCategoryFilter) => void;
+  onResetFilters: () => void;
+  onTypeChange: (type: TransactionFilterType) => void;
+  selectedCategory: TransactionCategoryFilter;
+  selectedType: TransactionFilterType;
   transactions: Transaction[];
 };
 
@@ -34,14 +39,15 @@ type TransactionToast = {
 };
 
 export function TransactionsSection({
+  onCategoryChange,
+  onResetFilters,
+  onTypeChange,
+  selectedCategory,
+  selectedType,
   transactions,
 }: TransactionsSectionProps) {
   const { dispatch, selectedRole } = useDashboard();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] =
-    useState<TransactionFilterType>('all');
-  const [selectedCategory, setSelectedCategory] =
-    useState<TransactionCategoryFilter>('all');
   const [sortOption, setSortOption] =
     useState<TransactionSortOption>('latest');
   const [editorMode, setEditorMode] =
@@ -94,9 +100,8 @@ export function TransactionsSection({
 
   function resetFilters() {
     setSearchTerm('');
-    setSelectedType('all');
-    setSelectedCategory('all');
     setSortOption('latest');
+    onResetFilters();
   }
 
   function openCreateEditor() {
@@ -226,7 +231,7 @@ export function TransactionsSection({
             className="field__control"
             value={selectedType}
             onChange={(event) =>
-              setSelectedType(event.target.value as TransactionFilterType)
+              onTypeChange(event.target.value as TransactionFilterType)
             }
           >
             <option value="all">All types</option>
@@ -241,7 +246,7 @@ export function TransactionsSection({
             className="field__control"
             value={selectedCategory}
             onChange={(event) =>
-              setSelectedCategory(event.target.value as TransactionCategoryFilter)
+              onCategoryChange(event.target.value as TransactionCategoryFilter)
             }
           >
             <option value="all">All categories</option>
