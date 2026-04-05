@@ -16,6 +16,12 @@ type SpendingSlice = {
   share: number;
 };
 
+export type CircularBreakdownSlice = {
+  label: string;
+  value: number;
+  share: number;
+};
+
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -153,6 +159,80 @@ export function buildSpendingBreakdown(
       share: Math.round((total / totalExpenses) * 100),
     }))
     .sort((left, right) => right.total - left.total);
+}
+
+function buildCategoryBreakdown(
+  transactions: Transaction[],
+  type: 'income' | 'expense',
+): CircularBreakdownSlice[] {
+  const filteredTransactions = transactions.filter(
+    (transaction) => transaction.type === type,
+  );
+
+  if (filteredTransactions.length === 0) {
+    return [];
+  }
+
+  const totalsByCategory = filteredTransactions.reduce<Map<string, number>>(
+    (accumulator, transaction) => {
+      accumulator.set(
+        transaction.category,
+        (accumulator.get(transaction.category) ?? 0) + transaction.amount,
+      );
+      return accumulator;
+    },
+    new Map(),
+  );
+
+  const totalValue = filteredTransactions.reduce(
+    (sum, transaction) => sum + transaction.amount,
+    0,
+  );
+
+  return Array.from(totalsByCategory.entries())
+    .map(([label, value]) => ({
+      label,
+      value,
+      share: Math.round((value / totalValue) * 100),
+    }))
+    .sort((left, right) => right.value - left.value);
+}
+
+export function buildIncomeBreakdown(transactions: Transaction[]) {
+  return buildCategoryBreakdown(transactions, 'income');
+}
+
+export function buildExpenseBreakdown(transactions: Transaction[]) {
+  return buildCategoryBreakdown(transactions, 'expense');
+}
+
+export function buildBalanceComposition(transactions: Transaction[]) {
+  const summary = getSummaryMetrics(transactions);
+  const segments = [
+    {
+      label: 'Opening balance',
+      value: summary.openingBalance,
+    },
+    {
+      label: 'Income added',
+      value: summary.income,
+    },
+    {
+      label: 'Expenses paid',
+      value: summary.expenses,
+    },
+  ].filter((segment) => segment.value > 0);
+
+  const totalValue = segments.reduce((sum, segment) => sum + segment.value, 0);
+
+  if (totalValue === 0) {
+    return [];
+  }
+
+  return segments.map((segment) => ({
+    ...segment,
+    share: Math.round((segment.value / totalValue) * 100),
+  }));
 }
 
 export function getTransactionWindowLabel(transactions: Transaction[]) {

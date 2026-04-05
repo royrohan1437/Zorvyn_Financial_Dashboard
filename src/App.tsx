@@ -7,18 +7,54 @@ import { SpendingBreakdownChart } from './components/spending-breakdown-chart';
 import { TransactionsSection } from './components/transactions-section';
 import { useDashboard } from './state/dashboard-context';
 import {
+  buildBalanceComposition,
   buildBalanceTrend,
+  buildExpenseBreakdown,
+  buildIncomeBreakdown,
   buildSpendingBreakdown,
   currencyFormatter,
   getSummaryMetrics,
   getTransactionWindowLabel,
 } from './utils/finance';
 
+const balancePalette = ['#2563eb', '#16a34a', '#d97706'];
+const incomePalette = ['#0f766e', '#16a34a', '#0ea5e9', '#0891b2'];
+const expensePalette = [
+  '#b45309',
+  '#dc2626',
+  '#475569',
+  '#0284c7',
+  '#0f766e',
+  '#be123c',
+];
+
+function assignChartColors<T extends { label: string; value: number; share: number }>(
+  segments: T[],
+  palette: string[],
+) {
+  return segments.map((segment, index) => ({
+    ...segment,
+    color: palette[index % palette.length],
+  }));
+}
+
 function App() {
   const { dispatch, selectedRole, selectedTheme, transactions } = useDashboard();
   const summary = getSummaryMetrics(transactions);
   const balanceTrend = buildBalanceTrend(transactions, summary.openingBalance);
   const spendingBreakdown = buildSpendingBreakdown(transactions);
+  const balanceComposition = assignChartColors(
+    buildBalanceComposition(transactions),
+    balancePalette,
+  );
+  const incomeBreakdown = assignChartColors(
+    buildIncomeBreakdown(transactions),
+    incomePalette,
+  );
+  const expenseBreakdown = assignChartColors(
+    buildExpenseBreakdown(transactions),
+    expensePalette,
+  );
   const timeWindowLabel = getTransactionWindowLabel(transactions);
 
   function handleThemeToggle() {
@@ -78,22 +114,28 @@ function App() {
             delta={`${summary.balanceChange >= 0 ? '+' : ''}${currencyFormatter.format(
               summary.balanceChange,
             )}`}
+            emptyLabel="No balance composition yet."
+            segments={balanceComposition}
             tone="neutral"
-            description="Opening balance plus all tracked movement."
+            description="Opening capital, income added, and expenses paid shown in one circular balance view."
           />
           <OverviewCard
             label="Income"
             value={currencyFormatter.format(summary.income)}
             delta={`${summary.incomeShare}% of activity`}
+            emptyLabel="No income categories yet."
+            segments={incomeBreakdown}
             tone="positive"
-            description="All incoming cash across salary, freelance, and refunds."
+            description="Hover the ring to inspect which income categories contribute the most."
           />
           <OverviewCard
             label="Expenses"
             value={currencyFormatter.format(summary.expenses)}
             delta={`${summary.expenseShare}% of activity`}
+            emptyLabel="No expense categories yet."
+            segments={expenseBreakdown}
             tone="negative"
-            description="Tracked outflow grouped for rapid pattern recognition."
+            description="Each expense slice shows how much a category is consuming from total outflow."
           />
         </section>
 

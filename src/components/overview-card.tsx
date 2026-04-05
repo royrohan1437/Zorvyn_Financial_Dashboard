@@ -1,8 +1,15 @@
+import {
+  CircularBreakdownChart,
+  type CircularBreakdownSegment,
+} from './circular-breakdown-chart';
+
 type OverviewCardProps = {
   label: string;
   value: string;
   delta: string;
   description: string;
+  emptyLabel: string;
+  segments: CircularBreakdownSegment[];
   tone: 'neutral' | 'positive' | 'negative';
 };
 
@@ -11,6 +18,8 @@ export function OverviewCard({
   value,
   delta,
   description,
+  emptyLabel,
+  segments,
   tone,
 }: OverviewCardProps) {
   return (
@@ -20,7 +29,13 @@ export function OverviewCard({
         <span className="overview-card__delta">{delta}</span>
       </div>
 
-      <p className="overview-card__value">{value}</p>
+      <CircularBreakdownChart
+        centerLabel={label}
+        centerValue={value}
+        emptyLabel={emptyLabel}
+        segments={segments}
+      />
+
       <p className="overview-card__description">{description}</p>
     </article>
   );
