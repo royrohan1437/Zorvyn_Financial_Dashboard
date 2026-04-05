@@ -12,16 +12,27 @@ import {
 } from './utils/finance';
 
 function App() {
-  const { transactions } = useDashboard();
+  const { dispatch, selectedTheme, transactions } = useDashboard();
   const summary = getSummaryMetrics(transactions);
   const balanceTrend = buildBalanceTrend(transactions, summary.openingBalance);
   const spendingBreakdown = buildSpendingBreakdown(transactions);
   const timeWindowLabel = getTransactionWindowLabel(transactions);
 
+  function handleThemeToggle() {
+    dispatch({
+      type: 'set-theme',
+      payload: selectedTheme === 'light' ? 'dark' : 'light',
+    });
+  }
+
   return (
     <div className="app-shell">
       <div className="app-shell__gradient" />
-      <DashboardHeader timeWindowLabel={timeWindowLabel} />
+      <DashboardHeader
+        currentTheme={selectedTheme}
+        onThemeToggle={handleThemeToggle}
+        timeWindowLabel={timeWindowLabel}
+      />
 
       <main className="dashboard-layout">
         <section className="hero-panel">

@@ -1,8 +1,18 @@
+import type { ThemeMode } from '../types/finance';
+
 type DashboardHeaderProps = {
+  currentTheme: ThemeMode;
+  onThemeToggle: () => void;
   timeWindowLabel: string;
 };
 
-export function DashboardHeader({ timeWindowLabel }: DashboardHeaderProps) {
+export function DashboardHeader({
+  currentTheme,
+  onThemeToggle,
+  timeWindowLabel,
+}: DashboardHeaderProps) {
+  const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+
   return (
     <header className="dashboard-header">
       <div>
@@ -19,6 +29,20 @@ export function DashboardHeader({ timeWindowLabel }: DashboardHeaderProps) {
           <span className="status-dot" />
           <span>Mock portfolio live</span>
         </div>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={onThemeToggle}
+          aria-label={`Switch to ${nextTheme} mode`}
+          title={`Switch to ${nextTheme} mode`}
+        >
+          <span className="theme-toggle__indicator" aria-hidden="true">
+            <span className="theme-toggle__thumb" />
+          </span>
+          <span className="theme-toggle__copy">
+            {currentTheme === 'light' ? 'Light mode' : 'Dark mode'}
+          </span>
+        </button>
       </div>
     </header>
   );

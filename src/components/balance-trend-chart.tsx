@@ -69,8 +69,8 @@ export function BalanceTrendChart({
           >
             <defs>
               <linearGradient id="balance-fill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="rgba(22, 163, 74, 0.30)" />
-                <stop offset="100%" stopColor="rgba(22, 163, 74, 0.02)" />
+                <stop offset="0%" stopColor="var(--chart-accent-soft)" />
+                <stop offset="100%" stopColor="var(--chart-accent-fade)" />
               </linearGradient>
             </defs>
 
@@ -78,7 +78,12 @@ export function BalanceTrendChart({
               d={`${linePath} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`}
               fill="url(#balance-fill)"
             />
-            <path d={linePath} fill="none" stroke="#166534" strokeWidth="4" />
+            <path
+              d={linePath}
+              fill="none"
+              stroke="var(--chart-accent)"
+              strokeWidth="4"
+            />
 
             {data.map((item, index) => {
               const x =
@@ -90,7 +95,13 @@ export function BalanceTrendChart({
 
               return (
                 <g key={item.label}>
-                  <circle cx={x} cy={y} r="6" fill="#fefce8" stroke="#166534" />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="6"
+                    fill="var(--chart-dot-fill)"
+                    stroke="var(--chart-accent)"
+                  />
                   <text x={x} y={chartHeight + 22} textAnchor="middle">
                     {item.label}
                   </text>

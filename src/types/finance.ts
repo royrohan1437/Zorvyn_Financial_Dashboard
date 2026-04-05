@@ -1,6 +1,7 @@
 export type TransactionType = 'income' | 'expense';
 
 export type Role = 'viewer' | 'admin';
+export type ThemeMode = 'light' | 'dark';
 
 export type TransactionCategory =
   | 'Salary'
@@ -25,4 +26,5 @@ export type Transaction = {
 export type DashboardState = {
   transactions: Transaction[];
   selectedRole: Role;
+  selectedTheme: ThemeMode;
 };
